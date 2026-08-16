@@ -1,0 +1,103 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "verify_customer",
+      "description": "Verifies caller identity against the account record using the last 4 digits of PAN or year of birth. Must be called before any debt/EMI/overdue information is disclosed. Returns verified=false on mismatch — do not disclose debt in that case.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string", "description": "Account ID for the target customer, e.g. ACC-88392" },
+          "verification_code": { "type": "string", "description": "The 4-digit PAN suffix or 4-digit birth year the caller provided" }
+        },
+        "required": ["account_id", "verification_code"]
+      }
+    },
+    "server": { "url": "https://<your-ngrok-or-render-url>/webhook" }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_account_details",
+      "description": "Fetches the current overdue amount, days-past-due, and loan type for a verified account. Only call after verify_customer has returned verified=true.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string" }
+        },
+        "required": ["account_id"]
+      }
+    },
+    "server": { "url": "https://<your-ngrok-or-render-url>/webhook" }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "log_promise_to_pay",
+      "description": "Logs a promise-to-pay commitment once the customer has agreed to a specific date and amount.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string" },
+          "ptp_date": { "type": "string", "description": "ISO-8601 date the customer committed to pay, e.g. 2026-08-21" },
+          "amount": { "type": "number", "description": "Amount the customer committed to pay" }
+        },
+        "required": ["account_id", "ptp_date", "amount"]
+      }
+    },
+    "server": { "url": "https://<your-ngrok-or-render-url>/webhook" }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "send_payment_link",
+      "description": "Sends a payment link to the customer's registered mobile number via SMS and/or WhatsApp. Call this right after log_promise_to_pay succeeds.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string" },
+          "channel": { "type": "string", "enum": ["SMS", "WhatsApp", "BOTH"] }
+        },
+        "required": ["account_id", "channel"]
+      }
+    },
+    "server": { "url": "https://<your-ngrok-or-render-url>/webhook" }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "escalate_to_agent",
+      "description": "Hands the call off to a human collections agent for cases the bot should not resolve on its own: disputes, hardship requiring authorized restructuring, or a caller requesting a human.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string" },
+          "reason": { "type": "string", "enum": ["DISPUTE", "HARDSHIP_REQUEST", "CALLER_REQUESTED_HUMAN", "REPEATED_AUTH_FAILURE", "ABUSIVE_ESCALATION"] },
+          "notes": { "type": "string", "description": "One or two lines of context for the human agent" }
+        },
+        "required": ["account_id", "reason"]
+      }
+    },
+    "server": { "url": "https://<your-ngrok-or-render-url>/webhook" }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mark_disposition",
+      "description": "Logs the final outcome of the call. Must be called exactly once, at the end of every call, regardless of how the call ended.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["PTP_AGREED", "ALREADY_PAID", "DISPUTED", "HARDSHIP_ESCALATED", "WRONG_PERSON", "DO_NOT_CALL", "NO_RESPONSE", "HOSTILE_TERMINATED", "HUMAN_HANDOFF"]
+          },
+          "notes": { "type": "string" }
+        },
+        "required": ["account_id", "status"]
+      }
+    },
+    "server": { "url": "https://<your-ngrok-or-render-url>/webhook" }
+  }
+]

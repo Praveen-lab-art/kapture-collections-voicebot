@@ -1,0 +1,45 @@
+digraph StateMachine {
+  rankdir=TB;
+  graph [fontname="Helvetica", bgcolor="white", pad=0.3, nodesep=0.4, ranksep=0.5];
+  node [fontname="Helvetica", fontsize=11, shape=box, style="rounded,filled", fillcolor="#EEF2FF", color="#4338CA", penwidth=1.2, margin=0.15];
+  edge [fontname="Helvetica", fontsize=9.5, color="#555555"];
+
+  START [shape=oval, fillcolor="#FFF7ED", color="#C2410C", label="Call connects"];
+  GREETING [label="GREETING\ndisclose Maya /\nKapture Finance /\ncall purpose"];
+  IDCHECK [label="IDENTITY_CHECK\n(is this the target\ncustomer?)"];
+  AUTH [label="AUTH\nask PAN last-4 / DOB\nverify_customer()", fillcolor="#FEF9C3", color="#A16207"];
+  DISCLOSE [label="DISCLOSURE\n(gated: verified==true)\nstate amount + DPD", fillcolor="#DCFCE7", color="#15803D"];
+  NEGOTIATE [label="NEGOTIATION\nclassify intent"];
+  PTP [label="PTP_CAPTURE\nlog_promise_to_pay()\nsend_payment_link()", fillcolor="#DCFCE7", color="#15803D"];
+  ALREADY [label="ALREADY_PAID\ncapture ref + date\nmark_disposition()"];
+  HARDSHIP [label="HARDSHIP\noffer partial/extension\nor escalate_to_agent()"];
+  DISPUTE [label="DISPUTE\nescalate_to_agent()"];
+  DNC [label="DO_NOT_CALL\nmark_disposition()\nimmediate", fillcolor="#FEE2E2", color="#B91C1C"];
+  WRONGNUM [label="WRONG_PERSON\nmark_disposition()\nno debt disclosed", fillcolor="#FEE2E2", color="#B91C1C"];
+  ABUSIVE [label="HOSTILE\n1 warning ->\nsoft hangup", fillcolor="#FEE2E2", color="#B91C1C"];
+  NOINPUT [label="NO_INPUT\n2 re-prompts ->\nhangup", fillcolor="#FEE2E2", color="#B91C1C"];
+  HUMAN [label="HUMAN_HANDOFF\nescalate_to_agent()", fillcolor="#FEE2E2", color="#B91C1C"];
+  WRAP [label="WRAP_UP\nmark_disposition()\nalways fires", fillcolor="#EDE9FE", color="#6D28D9"];
+  END [shape=oval, fillcolor="#F3F4F6", color="#374151", label="Call ends"];
+
+  START -> GREETING;
+  GREETING -> IDCHECK;
+  IDCHECK -> AUTH [label="confirmed target"];
+  IDCHECK -> WRONGNUM [label="not the customer /\nunavailable"];
+  AUTH -> DISCLOSE [label="verify_customer\nreturns verified=true", color="#15803D", fontcolor="#15803D"];
+  AUTH -> AUTH [label="failed, retry\n(max 2)"];
+  AUTH -> HUMAN [label="2x fail"];
+  DISCLOSE -> NEGOTIATE;
+  NEGOTIATE -> PTP [label="will_pay"];
+  NEGOTIATE -> ALREADY [label="already_paid"];
+  NEGOTIATE -> HARDSHIP [label="cannot_pay"];
+  NEGOTIATE -> DISPUTE [label="dispute"];
+  NEGOTIATE -> DNC [label="opt-out"];
+  NEGOTIATE -> ABUSIVE [label="hostile"];
+  IDCHECK -> NOINPUT [label="silence / voicemail"];
+  NEGOTIATE -> NOINPUT [label="silence"];
+  HARDSHIP -> HUMAN [label="needs human\nauthority"];
+  PTP -> WRAP; ALREADY -> WRAP; HARDSHIP -> WRAP; DISPUTE -> WRAP;
+  DNC -> WRAP; WRONGNUM -> WRAP; ABUSIVE -> WRAP; NOINPUT -> WRAP; HUMAN -> WRAP;
+  WRAP -> END;
+}

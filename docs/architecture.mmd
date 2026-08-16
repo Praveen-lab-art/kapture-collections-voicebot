@@ -1,0 +1,46 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Tel as Telephony (PSTN/SIP)
+    participant Vapi as Vapi Orchestrator
+    participant STT as Deepgram STT
+    participant LLM as LLM (GPT-4o)
+    participant Srv as Webhook API + Datastore
+    participant TTS as ElevenLabs TTS
+
+    Customer->>Tel: Answers call
+    Tel->>Vapi: Audio stream
+    Vapi->>STT: Stream audio (~200ms)
+    STT-->>Vapi: Partial + final transcript
+
+    rect rgb(240,240,240)
+    note over Vapi,Srv: STATE: GREETING -> AUTH (no debt disclosed)
+    Vapi->>LLM: Transcript + state + tool schemas (~400ms first token)
+    LLM-->>Vapi: "Confirm last 4 digits of PAN or DOB"
+    Vapi->>TTS: Synthesize (~300ms)
+    TTS-->>Customer: Audio response
+    Customer->>Vapi: "1234"
+    Vapi->>LLM: Transcript "1234"
+    LLM->>Srv: verify_customer(account_id, code)
+    Srv-->>LLM: verified:true, name, account
+    end
+
+    rect rgb(222,245,222)
+    note over Vapi,Srv: STATE: DISCLOSURE -> NEGOTIATION (gated on verified=true)
+    LLM-->>Vapi: Disclose amount + DPD, ask for PTP
+    Vapi->>TTS: Synthesize
+    TTS-->>Customer: "₹8,499 overdue by 12 days..."
+    Customer->>Vapi: "I'll pay Friday"
+    LLM->>Srv: log_promise_to_pay(account_id, date, amount)
+    Srv-->>LLM: ptp_id
+    LLM->>Srv: send_payment_link(account_id, channel)
+    Srv-->>LLM: link_sent:true
+    end
+
+    rect rgb(250,235,215)
+    note over Vapi,Srv: STATE: WRAP_UP
+    LLM->>Srv: mark_disposition(account_id, status, notes)
+    Srv-->>LLM: logged:true
+    end
+    LLM-->>Vapi: Closing line
+    Vapi->>Customer: End call

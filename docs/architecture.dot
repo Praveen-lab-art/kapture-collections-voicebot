@@ -1,0 +1,31 @@
+digraph Architecture {
+  rankdir=LR;
+  graph [fontname="Helvetica", bgcolor="white", pad=0.4, nodesep=0.45, ranksep=0.65];
+  node [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled", fillcolor="#EEF2FF", color="#4338CA", penwidth=1.3, margin=0.18];
+  edge [fontname="Helvetica", fontsize=10, color="#555555"];
+
+  Customer [shape=oval, fillcolor="#FFF7ED", color="#C2410C", label="Customer\n(PSTN phone)"];
+  Tel [label="Telephony\nSIP / PSTN carrier\n~ (network) 100-150ms"];
+  STT [label="STT\nDeepgram Nova-2\n~150-250ms"];
+  Orch [label="Orchestrator / LLM\nVapi + GPT-4o (temp 0.2)\nstate machine + prompt\n~300-500ms first token", fillcolor="#DCFCE7", color="#15803D"];
+  TTS [label="TTS\nElevenLabs / Cartesia\n~150-300ms"];
+  Tools [label="Tool Layer (webhooks)\nverify_customer\nlog_promise_to_pay\nsend_payment_link\nescalate_to_agent\nmark_disposition", fillcolor="#FEF9C3", color="#A16207"];
+  DB [shape=cylinder, label="Datastore\nAccounts / PTPs /\nCall logs / DNC list", fillcolor="#FCE7F3", color="#BE185D"];
+  SMS [shape=note, label="SMS / WhatsApp\ngateway (mock)", fillcolor="#E0F2FE", color="#0369A1"];
+  Human [shape=oval, label="Human Agent\n(escalation queue)", fillcolor="#FEE2E2", color="#B91C1C"];
+  Obs [shape=component, label="Observability\ncall logs, transcripts,\nmetrics dashboard", fillcolor="#EDE9FE", color="#6D28D9"];
+
+  Customer -> Tel [label="voice"];
+  Tel -> STT [label="audio stream"];
+  STT -> Orch [label="transcript"];
+  Orch -> TTS [label="response text"];
+  TTS -> Tel [label="audio"];
+  Tel -> Customer [label="voice"];
+
+  Orch -> Tools [label="function call", dir=both, color="#15803D"];
+  Tools -> DB [dir=both];
+  Tools -> SMS [label="payment link"];
+  Tools -> Human [label="escalate_to_agent"];
+  Orch -> Obs [label="events / turns", style=dashed];
+  Tools -> Obs [label="tool results", style=dashed];
+}

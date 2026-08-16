@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Kapture Finance — Collections Voicebot ("Maya")
 
 AI Delivery take-home assignment submission.
@@ -105,3 +106,6 @@ kapture-collections-voicebot/
 *(Link to the call recording / Loom walkthrough goes here — record after wiring the assistant to
 a live ngrok URL, since the tool calls need a reachable webhook to demonstrate the PTP and
 already-paid paths end to end.)*
+=======
+# kapture-collections-voicebot
+>>>>>>> a2f2168260cc70dff20302a34435b1f0109b0344
